@@ -1,5 +1,6 @@
 const { createClerkClient } = require("@clerk/backend");
 const User = require("../models/User");
+const FriendRequest = require("../models/FriendRequest");
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -71,23 +72,66 @@ const searchUserByEmail = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
+    const currentUser = await User.findOne({ clerkId: req.clerkId });
+
+    if (!currentUser) {
+      return res.status(404).json({
+        message: "Current user not found",
+      });
+    }
+
+    const searchedUser = await User.findOne({
       email: email.toLowerCase(),
     }).select("-__v");
 
-    if (!user) {
+    if (!searchedUser) {
       return res.status(404).json({
         message: "User not found",
       });
     }
 
-    if (user.clerkId === req.clerkId) {
-  return res.status(400).json({
-    message: "You cannot search for yourself",
-  });
-}
+    if (searchedUser.clerkId === req.clerkId) {
+      return res.status(400).json({
+        message: "You cannot search for yourself",
+      });
+    }
 
-    return res.status(200).json(user);
+    const relationship = await FriendRequest.findOne({
+      $or: [
+        {
+          sender: currentUser._id,
+          receiver: searchedUser._id,
+        },
+        {
+          sender: searchedUser._id,
+          receiver: currentUser._id,
+        },
+      ],
+    });
+
+    let relationshipStatus = "none";
+
+    if (relationship) {
+      if (relationship.status === "accepted") {
+        relationshipStatus = "friends";
+      } else if (
+        relationship.status === "pending" &&
+        relationship.sender.toString() === currentUser._id.toString()
+      ) {
+        relationshipStatus = "pending_sent";
+      } else if (
+        relationship.status === "pending" &&
+        relationship.receiver.toString() === currentUser._id.toString()
+      ) {
+        relationshipStatus = "pending_received";
+      }
+    }
+
+    return res.status(200).json({
+      user: searchedUser,
+      relationshipStatus,
+      friendRequestId: relationship?._id || null,
+    });
   } catch (error) {
     console.error("Search user error:", error);
 
