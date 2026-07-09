@@ -4,7 +4,7 @@ import { Route, Routes } from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import SignInPage from "../pages/SignInPage";
 import SignUpPage from "../pages/SignUpPage";
-import ChatPage from "../pages/ChatPage";
+import DashboardPage from "../pages/DashboardPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
 const ProtectedRoute = ({ children }) => {
@@ -29,7 +29,7 @@ const AppRoutes = () => {
         path="/chat"
         element={
           <ProtectedRoute>
-            <ChatPage />
+            <DashboardPage />
           </ProtectedRoute>
         }
       />
