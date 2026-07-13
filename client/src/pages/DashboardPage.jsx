@@ -1,20 +1,43 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import api, { setAuthToken } from "../services/api";
+import { useState } from "react";
+import toast from "react-hot-toast";
 import FriendList from "../components/Friends/FriendList";
 import SearchResultCard from "../components/Search/SearchResultCard";
 import SearchForm from "../components/Search/SearchForm";
+import useFriends from "../hooks/useFriends";
+import useSearchUser from "../hooks/useSearchUser";
+import useFriendRequests from "../hooks/useFriendRequests";
 
 const ChatPage = () => {
-  const { getToken } = useAuth();
 
-  const [email, setEmail] = useState("");
-  const [searchResult, setSearchResult] = useState(null);
-  const [error, setError] = useState("");
-  const [friends, setFriends] = useState([]);
+  const {
+    friends,
+    isLoadingFriends,
+    friendsError,
+    refreshFriends,
+    removeFriend,
+  } = useFriends();
 
-  const searchedUser = searchResult?.user;
-  const relationshipStatus = searchResult?.relationshipStatus;
+  const {
+    email,
+    setEmail,
+    searchResult,
+    searchedUser,
+    relationshipStatus,
+    searchError,
+    isSearching,
+    searchUser,
+    updateRelationship,
+  } = useSearchUser();
+
+  const {
+    sendFriendRequest,
+    acceptFriendRequest,
+    declineFriendRequest,
+  } = useFriendRequests({
+    searchResult,
+    updateRelationship,
+    refreshFriends,
+  });
 
   const fetchFriends = async () => {
     try {
@@ -26,93 +49,56 @@ const ChatPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchFriends();
-  }, []);
+  const handleRemoveFriend = async (friend) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${friend.username} from your friends?`
+    );
 
-  const handleSearchUser = async (e) => {
-    e.preventDefault();
+    if (!confirmed) return;
 
-    setError("");
-    setSearchResult(null);
+    const result = await removeFriend(friend._id);
 
-    try {
-      await setAuthToken(getToken);
-      const response = await api.get(`/users/search?email=${email}`);
-      setSearchResult(response.data);
-    } catch (error) {
-      setError(error.response?.data?.message || "Something went wrong");
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
     }
   };
 
   const handleSendFriendRequest = async () => {
-    if (!searchedUser) return;
+    const result = await sendFriendRequest(searchedUser);
 
-    setError("");
+    if (!result) return;
 
-    try {
-      await setAuthToken(getToken);
-
-      const response = await api.post("/friends/request", {
-        receiverId: searchedUser._id,
-      });
-
-      alert(response.data.message);
-      setSearchResult((prev) => ({
-        ...prev,
-        relationshipStatus: "pending_sent",
-      }));
-    } catch (error) {
-      setError(error.response?.data?.message || "Something went wrong");
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
     }
   };
 
   const handleAcceptFriendRequest = async () => {
-    if (!searchResult?.friendRequestId) return;
+    const result = await acceptFriendRequest();
 
-    setError("");
+    if (!result) return;
 
-    try {
-      await setAuthToken(getToken);
-
-      const response = await api.patch(
-        `/friends/requests/${searchResult.friendRequestId}/accept`
-      );
-
-      alert(response.data.message);
-
-      setSearchResult((prev) => ({
-        ...prev,
-        relationshipStatus: "friends",
-      }));
-
-      fetchFriends();
-    } catch (error) {
-      setError(error.response?.data?.message || "Something went wrong");
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
     }
   };
+  
 
   const handleDeclineFriendRequest = async () => {
-    if (!searchResult?.friendRequestId) return;
+    const result = await declineFriendRequest();
 
-    setError("");
+    if (!result) return;
 
-    try {
-      await setAuthToken(getToken);
-
-      const response = await api.patch(
-        `/friends/requests/${searchResult.friendRequestId}/decline`
-      );
-
-      alert(response.data.message);
-
-      setSearchResult((prev) => ({
-        ...prev,
-        relationshipStatus: "none",
-        friendRequestId: null,
-      }));
-    } catch (error) {
-      setError(error.response?.data?.message || "Something went wrong");
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
     }
   };
 
@@ -123,7 +109,21 @@ const ChatPage = () => {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="rounded-2xl bg-white p-6 shadow-lg">
-          <FriendList friends={friends} />
+
+          {isLoadingFriends && (
+            <p className="text-gray-500">Loading friends...</p>
+          )}
+
+          {friendsError && (
+            <p className="text-red-600">{friendsError}</p>
+          )}
+
+          {!isLoadingFriends && !friendsError && (
+            <FriendList 
+              friends={friends} 
+              onRemoveFriend={handleRemoveFriend}
+            />
+          )}
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-lg md:col-span-2">
@@ -132,10 +132,13 @@ const ChatPage = () => {
           <SearchForm
             email={email}
             setEmail={setEmail}
-            handleSearchUser={handleSearchUser}
+            handleSearchUser={searchUser}
+            isSearching={isSearching}
           />
 
-          {error && <p className="mb-4 text-red-600">{error}</p>}
+          {searchError && (
+            <p className="mb-4 text-red-600">{searchError}</p>
+          )}
 
           <SearchResultCard
             searchedUser={searchedUser}

@@ -195,9 +195,56 @@ const getFriends = async (req, res) => {
   }
 };
 
+const removeFriend = async (req, res) => {
+  try {
+    const { friendId } = req.params;
+
+    const currentUser = await User.findOne({
+      clerkId: req.clerkId,
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({
+        message: "Current user not found",
+      });
+    }
+
+    const friendship = await FriendRequest.findOneAndDelete({
+      status: "accepted",
+      $or: [
+        {
+          sender: currentUser._id,
+          receiver: friendId,
+        },
+        {
+          sender: friendId,
+          receiver: currentUser._id,
+        },
+      ],
+    });
+
+    if (!friendship) {
+      return res.status(404).json({
+        message: "Friendship not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Friend removed successfully",
+    });
+  } catch (error) {
+    console.error("Remove friend error:", error);
+
+    return res.status(500).json({
+      message: "Server error while removing friend",
+    });
+  }
+};
+
 module.exports = {
   sendFriendRequest,
   acceptFriendRequest,
   declineFriendRequest,
   getFriends,
+  removeFriend,
 };
