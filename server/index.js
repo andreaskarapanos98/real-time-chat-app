@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const http = require("http");
+const initializeSocket = require("./sockets/socket");
 const { clerkMiddleware } = require("@clerk/express");
 const userRoutes = require("./routes/userRoutes");
 const connectDB = require("./config/db");
@@ -9,6 +11,9 @@ const connectDB = require("./config/db");
 const friendRoutes = require("./routes/friendRoutes");
 
 const app = express();
+const server = http.createServer(app);
+
+initializeSocket(server);
 
 connectDB();
 
@@ -24,6 +29,6 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

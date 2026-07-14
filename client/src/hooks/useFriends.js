@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import api, { setAuthToken } from "../services/api";
+import socket from "../services/socket";
 
 const useFriends = () => {
   const { getToken } = useAuth();
@@ -54,7 +55,19 @@ const useFriends = () => {
   };
 
   useEffect(() => {
-    fetchFriends();
+  fetchFriends();
+}, [fetchFriends]);
+
+  useEffect(() => {
+    const handleOnlineUsersUpdated = () => {
+      fetchFriends();
+    };
+
+    socket.on("online-users-updated", handleOnlineUsersUpdated);
+
+    return () => {
+      socket.off("online-users-updated", handleOnlineUsersUpdated);
+    };
   }, [fetchFriends]);
 
   return {

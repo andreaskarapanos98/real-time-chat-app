@@ -1,5 +1,6 @@
 const FriendRequest = require("../models/FriendRequest");
 const User = require("../models/User");
+const { isUserOnline } = require("../sockets/presenceService");
 
 const sendFriendRequest = async (req, res) => {
   try {
@@ -173,8 +174,8 @@ const getFriends = async (req, res) => {
         { receiver: currentUser._id },
       ],
     })
-      .populate("sender", "username email imageUrl isOnline lastSeen")
-      .populate("receiver", "username email imageUrl isOnline lastSeen");
+      .populate("sender", "clerkId username email imageUrl lastSeen")
+      .populate("receiver","clerkId username email imageUrl lastSeen");
 
     const friends = friendships.map((friendship) => {
       const friend =
@@ -182,7 +183,10 @@ const getFriends = async (req, res) => {
           ? friendship.receiver
           : friendship.sender;
 
-      return friend;
+      return {
+        ...friend.toObject(),
+        isOnline: isUserOnline(friend.clerkId),
+      };
     });
 
     res.status(200).json(friends);
