@@ -1,8 +1,23 @@
 import Avatar from "../Common/Avatar";
 
-const FriendCard = ({ friend, onRemoveFriend }) => {
+const FriendCard = ({
+  friend,
+  isSelected,
+  unreadCount,
+  onSelectFriend,
+  onRemoveFriend,
+}) => {
   return (
-    <div className="flex items-center gap-3 rounded-lg p-3 transition hover:bg-gray-100">
+    <div
+      onClick={() => onSelectFriend(friend)}
+      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition ${
+        isSelected
+          ? "bg-blue-100"
+          : unreadCount > 0
+            ? "bg-blue-50 hover:bg-blue-100"
+            : "hover:bg-gray-100"
+      }`}
+    >
       <Avatar
         src={friend.imageUrl}
         alt={friend.username}
@@ -22,9 +37,18 @@ const FriendCard = ({ friend, onRemoveFriend }) => {
         </p>
       </div>
 
+      {unreadCount > 0 && (
+        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-bold text-white">
+          {unreadCount}
+        </span>
+      )}
+
       <button
         type="button"
-        onClick={() => onRemoveFriend(friend)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onRemoveFriend(friend);
+        }}
         className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700"
       >
         Remove

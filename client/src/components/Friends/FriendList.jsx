@@ -1,6 +1,6 @@
 import FriendCard from "./FriendCard";
 
-const FriendList = ({ friends, onRemoveFriend }) => {
+const FriendList = ({ friends, selectedFriend, onSelectFriend, onRemoveFriend, unreadByFriend, }) => {
   const onlineFriends = friends.filter((friend) => friend.isOnline);
   const offlineFriends = friends.filter((friend) => !friend.isOnline);
 
@@ -22,6 +22,9 @@ const FriendList = ({ friends, onRemoveFriend }) => {
           <FriendCard
             key={friend._id}
             friend={friend}
+            isSelected={selectedFriend?._id === friend._id}
+            unreadCount={unreadByFriend[friend._id] || 0}
+            onSelectFriend={onSelectFriend}
             onRemoveFriend={onRemoveFriend}
           />
           ))}
@@ -38,6 +41,9 @@ const FriendList = ({ friends, onRemoveFriend }) => {
           <FriendCard
             key={friend._id}
             friend={friend}
+            isSelected={selectedFriend?._id === friend._id}
+            unreadCount={unreadByFriend[friend._id] || 0}
+            onSelectFriend={onSelectFriend}
             onRemoveFriend={onRemoveFriend}
           />
           ))}

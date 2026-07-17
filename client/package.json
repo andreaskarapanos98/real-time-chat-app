@@ -13,6 +13,8 @@
     "@clerk/clerk-react": "^5.61.8",
     "@tailwindcss/vite": "^4.3.2",
     "axios": "^1.18.1",
+    "emoji-picker-react": "^4.19.1",
+    "lucide-react": "^1.25.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hot-toast": "^2.6.0",

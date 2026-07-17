@@ -7,6 +7,7 @@ const initializeSocket = require("./sockets/socket");
 const { clerkMiddleware } = require("@clerk/express");
 const userRoutes = require("./routes/userRoutes");
 const connectDB = require("./config/db");
+const chatRoutes = require("./routes/chatRoutes");
 
 const friendRoutes = require("./routes/friendRoutes");
 
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use(clerkMiddleware());
 app.use("/api/users", userRoutes);
 app.use("/api/friends", friendRoutes);
+app.use("/api/messages", chatRoutes);
 
 app.get("/", (req, res) => {
   res.send("Real-time chat server is running");

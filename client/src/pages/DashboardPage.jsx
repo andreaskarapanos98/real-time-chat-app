@@ -1,13 +1,28 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import toast from "react-hot-toast";
+
 import FriendList from "../components/Friends/FriendList";
 import SearchResultCard from "../components/Search/SearchResultCard";
 import SearchForm from "../components/Search/SearchForm";
+import ChatWindow from "../components/Chat/ChatWindow";
+
 import useFriends from "../hooks/useFriends";
 import useSearchUser from "../hooks/useSearchUser";
 import useFriendRequests from "../hooks/useFriendRequests";
 
-const ChatPage = () => {
+import socket from "../services/socket";
+import api, { setAuthToken } from "../services/api";
+
+const DashboardPage = () => {
+  const { getToken } = useAuth();
+
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [messagesByFriend, setMessagesByFriend] = useState({});
+  const [unreadByFriend, setUnreadByFriend] = useState({});
+  const [typingByFriend, setTypingByFriend] = useState({});
+
+  const processedMessageIdsRef = useRef(new Set());
 
   const {
     friends,
@@ -39,16 +54,6 @@ const ChatPage = () => {
     refreshFriends,
   });
 
-  const fetchFriends = async () => {
-    try {
-      await setAuthToken(getToken);
-      const response = await api.get("/friends");
-      setFriends(response.data);
-    } catch (error) {
-      console.error("Fetch friends failed:", error);
-    }
-  };
-
   const handleRemoveFriend = async (friend) => {
     const confirmed = window.confirm(
       `Are you sure you want to remove ${friend.username} from your friends?`
@@ -59,6 +64,10 @@ const ChatPage = () => {
     const result = await removeFriend(friend._id);
 
     if (result.success) {
+      if (selectedFriend?._id === friend._id) {
+        setSelectedFriend(null);
+      }
+
       toast.success(result.message);
     } else {
       toast.error(result.message);
@@ -88,7 +97,6 @@ const ChatPage = () => {
       toast.error(result.message);
     }
   };
-  
 
   const handleDeclineFriendRequest = async () => {
     const result = await declineFriendRequest();
@@ -102,56 +110,262 @@ const ChatPage = () => {
     }
   };
 
+  const handleSelectFriend = (friend) => {
+    setSelectedFriend(friend);
+
+    setUnreadByFriend((currentUnread) => ({
+      ...currentUnread,
+      [friend._id]: 0,
+    }));
+  };
+
+  useEffect(() => {
+    const handleReceiveMessage = (incomingMessage) => {
+      console.log("📨 message:receive", incomingMessage);
+
+      const messageId = String(incomingMessage?._id || "");
+
+      if (!messageId) return;
+
+      if (processedMessageIdsRef.current.has(messageId)) {
+        return;
+      }
+
+      processedMessageIdsRef.current.add(messageId);
+
+      const senderFriend = friends.find(
+        (friend) =>
+          friend.clerkId === incomingMessage.senderClerkId
+      );
+
+      if (!senderFriend) {
+        console.log("Sender not found in friends list");
+        return;
+      }
+
+      setMessagesByFriend((currentMessages) => ({
+        ...currentMessages,
+        [senderFriend._id]: [
+          ...(currentMessages[senderFriend._id] || []),
+          incomingMessage,
+        ],
+      }));
+
+      const isChatOpen =
+        selectedFriend?._id === senderFriend._id;
+
+      if (!isChatOpen) {
+        setUnreadByFriend((currentUnread) => ({
+          ...currentUnread,
+          [senderFriend._id]:
+            (currentUnread[senderFriend._id] || 0) + 1,
+        }));
+
+        toast(`New message from ${senderFriend.username}`);
+      }
+    };
+
+    socket.on("message:receive", handleReceiveMessage);
+
+    return () => {
+      socket.off("message:receive", handleReceiveMessage);
+    };
+  }, [friends, selectedFriend]);
+
+
+  useEffect(() => {
+    const handleMessagesRead = ({ readerClerkId, readAt }) => {
+      console.log("✅ messages:read received", {
+        readerClerkId,
+        readAt,
+      });
+
+      const readerFriend = friends.find(
+        (friend) => friend.clerkId === readerClerkId
+      );
+
+      if (!readerFriend) {
+        console.log("❌ Reader not found in friends:", readerClerkId);
+        return;
+      }
+
+      setMessagesByFriend((currentMessages) => ({
+        ...currentMessages,
+        [readerFriend._id]: (
+          currentMessages[readerFriend._id] || []
+        ).map((message) =>
+          message.receiverClerkId === readerClerkId
+            ? {
+                ...message,
+                readAt,
+              }
+            : message
+        ),
+      }));
+    };
+
+    socket.on("messages:read", handleMessagesRead);
+
+    return () => {
+      socket.off("messages:read", handleMessagesRead);
+    };
+  }, [friends]);
+
+
+  useEffect(() => {
+    const loadConversation = async () => {
+      if (!selectedFriend) return;
+
+      try {
+        await setAuthToken(getToken);
+
+        const response = await api.get(
+          `/messages/${selectedFriend._id}`
+        );
+
+        
+
+        setMessagesByFriend((currentMessages) => ({
+          ...currentMessages,
+          [selectedFriend._id]: response.data,
+        }));
+
+        setUnreadByFriend((currentUnread) => ({
+          ...currentUnread,
+          [selectedFriend._id]: 0,
+        }));
+      } catch (error) {
+        console.error("Load conversation failed:", error);
+
+        toast.error(
+          error.response?.data?.message ||
+            "Failed to load conversation"
+        );
+      }
+    };
+
+    loadConversation();
+  }, [selectedFriend, getToken]);
+
+  useEffect(() => {
+    const handleTypingStart = ({ senderClerkId }) => {
+      const senderFriend = friends.find(
+        (friend) => friend.clerkId === senderClerkId
+      );
+
+      if (!senderFriend) return;
+
+      setTypingByFriend((currentTyping) => ({
+        ...currentTyping,
+        [senderFriend._id]: true,
+      }));
+    };
+
+    const handleTypingStop = ({ senderClerkId }) => {
+      const senderFriend = friends.find(
+        (friend) => friend.clerkId === senderClerkId
+      );
+
+      if (!senderFriend) return;
+
+      setTypingByFriend((currentTyping) => ({
+        ...currentTyping,
+        [senderFriend._id]: false,
+      }));
+    };
+
+    socket.on("typing:start", handleTypingStart);
+    socket.on("typing:stop", handleTypingStop);
+
+    return () => {
+      socket.off("typing:start", handleTypingStart);
+      socket.off("typing:stop", handleTypingStop);
+    };
+  }, [friends]);
+
   return (
-  <div className="min-h-screen bg-gray-100">
-    <div className="mx-auto max-w-7xl p-6">
-      <h1 className="mb-6 text-3xl font-bold">Real-Time Chat</h1>
+    <div className="min-h-screen bg-gray-100">
+      <div className="mx-auto max-w-7xl p-6">
+        <h1 className="mb-6 text-3xl font-bold">
+          Real-Time Chat
+        </h1>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="rounded-2xl bg-white p-6 shadow-lg">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="rounded-2xl bg-white p-6 shadow-lg">
+            {isLoadingFriends && (
+              <p className="text-gray-500">
+                Loading friends...
+              </p>
+            )}
 
-          {isLoadingFriends && (
-            <p className="text-gray-500">Loading friends...</p>
-          )}
+            {friendsError && (
+              <p className="text-red-600">
+                {friendsError}
+              </p>
+            )}
 
-          {friendsError && (
-            <p className="text-red-600">{friendsError}</p>
-          )}
+            {!isLoadingFriends && !friendsError && (
+              <FriendList
+                friends={friends}
+                selectedFriend={selectedFriend}
+                onSelectFriend={handleSelectFriend}
+                onRemoveFriend={handleRemoveFriend}
+                unreadByFriend={unreadByFriend}
+              />
+            )}
+          </div>
 
-          {!isLoadingFriends && !friendsError && (
-            <FriendList 
-              friends={friends} 
-              onRemoveFriend={handleRemoveFriend}
-            />
-          )}
-        </div>
+          <div className="rounded-2xl bg-white p-6 shadow-lg md:col-span-2">
+            {selectedFriend ? (
+              <ChatWindow
+                friend={selectedFriend}
+                messages={
+                  messagesByFriend[selectedFriend._id] || []
+                }
+                setMessagesByFriend={setMessagesByFriend}
+                isTyping={Boolean(
+                  typingByFriend[selectedFriend._id]
+                )}
+              />
+            ) : (
+              <>
+                <h2 className="mb-4 text-xl font-semibold">
+                  Search Users
+                </h2>
 
-        <div className="rounded-2xl bg-white p-6 shadow-lg md:col-span-2">
-          <h2 className="mb-4 text-xl font-semibold">Search Users</h2>
+                <SearchForm
+                  email={email}
+                  setEmail={setEmail}
+                  handleSearchUser={searchUser}
+                  isSearching={isSearching}
+                />
 
-          <SearchForm
-            email={email}
-            setEmail={setEmail}
-            handleSearchUser={searchUser}
-            isSearching={isSearching}
-          />
+                {searchError && (
+                  <p className="mb-4 text-red-600">
+                    {searchError}
+                  </p>
+                )}
 
-          {searchError && (
-            <p className="mb-4 text-red-600">{searchError}</p>
-          )}
-
-          <SearchResultCard
-            searchedUser={searchedUser}
-            relationshipStatus={relationshipStatus}
-            onSendFriendRequest={handleSendFriendRequest}
-            onAcceptFriendRequest={handleAcceptFriendRequest}
-            onDeclineFriendRequest={handleDeclineFriendRequest}
-          />
+                <SearchResultCard
+                  searchedUser={searchedUser}
+                  relationshipStatus={relationshipStatus}
+                  onSendFriendRequest={
+                    handleSendFriendRequest
+                  }
+                  onAcceptFriendRequest={
+                    handleAcceptFriendRequest
+                  }
+                  onDeclineFriendRequest={
+                    handleDeclineFriendRequest
+                  }
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
-export default ChatPage;
+export default DashboardPage;
