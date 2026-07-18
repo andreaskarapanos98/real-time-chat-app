@@ -12,34 +12,72 @@ const MessageList = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className="max-h-[420px] min-h-80 space-y-3 overflow-y-auto rounded-lg bg-gray-50 p-4">
+    <div className="min-h-[420px] max-h-[60vh] overflow-y-auto rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
       {messages.length === 0 && (
-        <p className="text-gray-500">No messages yet.</p>
+        <div className="flex min-h-[370px] items-center justify-center">
+          <div className="text-center">
+            <p className="text-base font-semibold text-gray-700">
+              No messages yet
+            </p>
+
+            <p className="mt-1 text-sm text-gray-400">
+              Send a message to start the conversation.
+            </p>
+          </div>
+        </div>
       )}
 
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         const isOwnMessage = message.senderClerkId === user?.id;
+        const previousMessage = messages[index - 1];
+        const nextMessage = messages[index + 1];
+
+        const startsGroup =
+          !previousMessage ||
+          previousMessage.senderClerkId !== message.senderClerkId;
+
+        const endsGroup =
+          !nextMessage ||
+          nextMessage.senderClerkId !== message.senderClerkId;
 
         return (
           <div
             key={message._id}
             className={`flex ${
               isOwnMessage ? "justify-end" : "justify-start"
-            }`}
+            } ${startsGroup ? "mt-3" : "mt-1"}`}
           >
             <div
-              className={`max-w-xs rounded-2xl px-4 py-2 ${
+              className={`max-w-[75%] px-4 py-3 transition-all ${
                 isOwnMessage
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-900 shadow"
+                  ? `bg-blue-600 text-white shadow-sm ${
+                      startsGroup && endsGroup
+                        ? "rounded-2xl"
+                        : startsGroup
+                          ? "rounded-2xl rounded-br-md"
+                          : endsGroup
+                            ? "rounded-2xl rounded-tr-md"
+                            : "rounded-l-2xl rounded-r-md"
+                    }`
+                  : `border border-gray-100 bg-white text-gray-900 shadow-sm ${
+                      startsGroup && endsGroup
+                        ? "rounded-2xl"
+                        : startsGroup
+                          ? "rounded-2xl rounded-bl-md"
+                          : endsGroup
+                            ? "rounded-2xl rounded-tl-md"
+                            : "rounded-r-2xl rounded-l-md"
+                    }`
               }`}
             >
-              <p>{message.content}</p>
+              <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+                {message.content}
+              </p>
 
-              <div className="mt-1 flex items-center justify-end gap-2">
+              <div className="mt-2 flex items-center justify-end gap-2">
                 <p
-                  className={`text-xs ${
-                    isOwnMessage ? "text-blue-100" : "text-gray-400"
+                  className={`text-[11px] ${
+                    isOwnMessage ? "text-blue-100/90" : "text-gray-400"
                   }`}
                 >
                   {new Date(message.createdAt).toLocaleTimeString([], {
@@ -49,7 +87,7 @@ const MessageList = ({ messages }) => {
                 </p>
 
                 {isOwnMessage && (
-                  <p className="text-xs text-blue-100">
+                  <p className="text-[11px] text-blue-100/90">
                     {message.readAt ? "Read" : "Sent"}
                   </p>
                 )}

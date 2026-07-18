@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, UserButton  } from "@clerk/clerk-react";
 import toast from "react-hot-toast";
+import { MessageSquarePlus, UserPlus } from "lucide-react";
 
 import FriendList from "../components/Friends/FriendList";
 import SearchResultCard from "../components/Search/SearchResultCard";
@@ -13,6 +14,8 @@ import useFriendRequests from "../hooks/useFriendRequests";
 
 import socket from "../services/socket";
 import api, { setAuthToken } from "../services/api";
+
+
 
 const DashboardPage = () => {
   const { getToken } = useAuth();
@@ -284,14 +287,44 @@ const DashboardPage = () => {
   }, [friends]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
       <div className="mx-auto max-w-7xl p-6">
-        <h1 className="mb-6 text-3xl font-bold">
-          Real-Time Chat
-        </h1>
+        <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
+            Messaging
+          </p>
+
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">
+            Real-Time Chat
+          </h1>
+        </div>
+
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "h-10 w-10",
+            },
+          }}
+        />
+      </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="rounded-2xl bg-white p-6 shadow-lg">
+            <div className="mb-5 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                Your network
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setSelectedFriend(null)}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 active:scale-95"
+              >
+                <UserPlus size={16} />
+                Add friend
+              </button>
+            </div>
             {isLoadingFriends && (
               <p className="text-gray-500">
                 Loading friends...

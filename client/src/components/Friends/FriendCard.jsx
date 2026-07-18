@@ -1,4 +1,5 @@
 import Avatar from "../Common/Avatar";
+import { UserMinus } from "lucide-react";
 
 const FriendCard = ({
   friend,
@@ -10,14 +11,19 @@ const FriendCard = ({
   return (
     <div
       onClick={() => onSelectFriend(friend)}
-      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition ${
+      className={`group relative mb-2 flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all duration-200 ${
         isSelected
-          ? "bg-blue-100"
+          ? "border-blue-200 bg-blue-50 shadow-sm"
           : unreadCount > 0
-            ? "bg-blue-50 hover:bg-blue-100"
-            : "hover:bg-gray-100"
+            ? "border-blue-100 bg-blue-50/70 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:shadow-sm"
+            : "border-transparent hover:-translate-y-0.5 hover:border-gray-200 hover:bg-white hover:shadow-sm"
       }`}
     >
+
+      {isSelected && (
+        <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-blue-600" />
+      )}
+
       <Avatar
         src={friend.imageUrl}
         alt={friend.username}
@@ -26,20 +32,26 @@ const FriendCard = ({
       />
 
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-semibold">{friend.username}</h3>
-
-        <p
-          className={`text-sm ${
-            friend.isOnline ? "text-green-600" : "text-gray-500"
+        <h3
+          className={`truncate text-sm font-semibold ${
+            isSelected ? "text-blue-900" : "text-gray-900"
           }`}
         >
-          {friend.isOnline ? "Online" : "Offline"}
+          {friend.username}
+        </h3>
+
+        <p
+          className={`mt-0.5 text-xs font-medium ${
+            friend.isOnline ? "text-green-600" : "text-gray-400"
+          }`}
+        >
+          {friend.isOnline ? "Active now" : "Offline"}
         </p>
       </div>
 
       {unreadCount > 0 && (
-        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-bold text-white">
-          {unreadCount}
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white shadow-sm">
+          {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       )}
 
@@ -49,9 +61,11 @@ const FriendCard = ({
           event.stopPropagation();
           onRemoveFriend(friend);
         }}
-        className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700"
+        aria-label={`Remove ${friend.username}`}
+        title={`Remove ${friend.username}`}
+        className="rounded-lg p-2 text-gray-400 opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
       >
-        Remove
+        <UserMinus size={17} />
       </button>
     </div>
   );

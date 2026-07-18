@@ -6,7 +6,20 @@ const FriendList = ({ friends, selectedFriend, onSelectFriend, onRemoveFriend, u
 
   return (
     <section>
-      <h2 className="mb-6 text-2xl font-bold">Friends</h2>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Your network
+          </p>
+
+          <h2 className="mt-1 text-2xl font-bold text-gray-900">
+            Friends{" "}
+            <span className="font-semibold">
+              ({friends.length})
+            </span>
+          </h2>
+        </div>
+      </div>
 
       {friends.length === 0 && (
         <p className="text-gray-500">No friends yet.</p>
@@ -14,9 +27,17 @@ const FriendList = ({ friends, selectedFriend, onSelectFriend, onRemoveFriend, u
 
       {onlineFriends.length > 0 && (
         <>
-          <h3 className="mb-2 text-sm font-semibold uppercase text-green-600">
-            🟢 Online ({onlineFriends.length})
-          </h3>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-green-500" />
+
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Online
+            </h3>
+
+            <span className="text-xs font-medium text-gray-400">
+              {onlineFriends.length}
+            </span>
+          </div>
 
           {onlineFriends.map((friend) => (
           <FriendCard
@@ -33,9 +54,17 @@ const FriendList = ({ friends, selectedFriend, onSelectFriend, onRemoveFriend, u
 
       {offlineFriends.length > 0 && (
         <>
-          <h3 className="mt-6 mb-2 text-sm font-semibold uppercase text-gray-500">
-            ⚫ Offline ({offlineFriends.length})
-          </h3>
+          <div className="mb-3 mt-6 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-gray-300" />
+
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Offline
+            </h3>
+
+            <span className="text-xs font-medium text-gray-400">
+              {offlineFriends.length}
+            </span>
+          </div>
 
           {offlineFriends.map((friend) => (
           <FriendCard

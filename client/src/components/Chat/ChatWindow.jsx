@@ -73,13 +73,14 @@ const ChatWindow = ({ friend, messages, setMessagesByFriend, isTyping, }) => {
 
         {friend.isOnline ? (
             <>
-            <MessageList messages={messages} />
-            <MessageInput
-                message={message}
-                setMessage={setMessage}
-                onSendMessage={handleSendMessage}
-                onTyping={handleTyping}
-            />
+                <MessageList messages={messages} />
+
+                <MessageInput
+                    message={message}
+                    setMessage={setMessage}
+                    onSendMessage={handleSendMessage}
+                    onTyping={handleTyping}
+                />
             </>
         ) : (
             <div className="rounded-lg bg-yellow-50 p-4 text-yellow-800">
