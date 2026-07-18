@@ -13,7 +13,7 @@ const SignInPage = () => {
         <section className="hidden lg:block">
           <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-blue-100 backdrop-blur">
             <MessageCircle size={18} />
-            Real-Time Messaging
+            FlowChat
           </div>
 
           <h1 className="max-w-xl text-6xl font-bold leading-tight tracking-tight text-white">

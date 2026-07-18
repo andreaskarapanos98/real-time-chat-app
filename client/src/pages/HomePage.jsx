@@ -43,7 +43,7 @@ const HomePage = () => {
                 </div>
 
                 <h2 className="text-2xl font-bold">
-                  Welcome to Real-Time Chat
+                  Welcome to FlowChat
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-300">

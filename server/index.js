@@ -26,7 +26,7 @@ app.use("/api/friends", friendRoutes);
 app.use("/api/messages", chatRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Real-time chat server is running");
+  res.send("FlowChat server is running");
 });
 
 const PORT = process.env.PORT || 5001;

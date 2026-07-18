@@ -296,7 +296,7 @@ const DashboardPage = () => {
           </p>
 
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">
-            Real-Time Chat
+            FlowChat
           </h1>
         </div>
 
